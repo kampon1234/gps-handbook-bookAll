@@ -2991,6 +2991,15 @@ document.addEventListener('keydown', e => {
   if (e.ctrlKey && e.key === 's') { e.preventDefault(); if(editMode) autoSave(); }
 });
 
+/* ── VERSION CHECK — ล้าง localStorage อัตโนมัติถ้าไฟล์ใหม่กว่า ── */
+const FILE_VERSION = '2025-03-25-v2'; // เปลี่ยนทุกครั้งที่อัพไฟล์ใหม่
+const savedVersion = localStorage.getItem('gps_handbook_version');
+if (savedVersion !== FILE_VERSION) {
+  // ไฟล์ใหม่กว่า — ล้างข้อมูลเก่าออก
+  localStorage.removeItem(STORAGE_KEY);
+  localStorage.setItem('gps_handbook_version', FILE_VERSION);
+}
+
 /* โหลดการแก้ไขที่บันทึกไว้ */
 assignEditIds();
 loadSavedEdits();
