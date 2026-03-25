@@ -3065,13 +3065,8 @@ async function pushToGitHub(token, repo) {
 }
 
 function saveHTML() {
-  autoSave();
-  const cfg = getGHConfig();
-  if (!cfg.token || !cfg.repo) {
-    showGHSetup((token, repo) => pushToGitHub(token, repo));
-  } else {
-    pushToGitHub(cfg.token, cfg.repo);
-  }
+  // always show setup modal so user can confirm/change settings
+  showGHSetup((token, repo) => pushToGitHub(token, repo));
 }
 
 editBtn.addEventListener('click', toggleEdit);
@@ -3097,6 +3092,9 @@ if (savedVersion !== FILE_VERSION) {
   localStorage.removeItem(STORAGE_KEY);
   localStorage.setItem('gps_handbook_version', FILE_VERSION);
 }
+
+/* ล้าง token เก่าถ้ามี — ให้กรอกใหม่ทุกครั้ง (ปลอดภัยกว่า) */
+// localStorage.removeItem(GH_TOKEN_KEY); // uncomment ถ้าอยากล้าง token
 
 /* โหลดการแก้ไขที่บันทึกไว้ */
 assignEditIds();
