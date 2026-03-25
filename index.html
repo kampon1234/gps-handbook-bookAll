@@ -2792,6 +2792,78 @@ body { user-select: auto; }
 body:hover 
 
 #edit-toolbar { z-index: 9998 !important; }
+
+/* ══ GITHUB MODAL ══ */
+#gh-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.65);
+  z-index: 10000;
+  backdrop-filter: blur(4px);
+}
+#gh-box {
+  position: fixed;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 10001;
+  background: linear-gradient(135deg, #120804, #1C0C06);
+  border: 1px solid rgba(184,146,42,0.35);
+  padding: 32px 36px;
+  width: 360px; max-width: 90vw;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.7);
+}
+#gh-box::before {
+  content: ''; position: absolute; top:0; left:0; right:0; height:2px;
+  background: linear-gradient(90deg, transparent, #C9A84C, transparent);
+}
+#gh-title {
+  font-family: 'Noto Serif SC', serif;
+  font-size: 18px; font-weight: 700;
+  color: #E8CA6A; letter-spacing: 2px; margin-bottom: 6px;
+}
+#gh-subtitle {
+  font-size: 12px; color: rgba(184,146,42,0.4);
+  letter-spacing: 1px; margin-bottom: 24px;
+  font-family: 'Noto Serif SC', serif;
+}
+.gh-label {
+  display: block; font-size: 12px;
+  color: rgba(184,146,42,0.55);
+  font-family: 'Noto Serif SC', serif;
+  letter-spacing: 1px; margin-bottom: 6px; margin-top: 16px;
+}
+#gh-token-inp, #gh-repo-inp {
+  width: 100%; padding: 10px 14px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(184,146,42,0.2);
+  color: rgba(255,255,255,0.85);
+  font-size: 14px; outline: none;
+  transition: border-color 0.2s; box-sizing: border-box;
+}
+#gh-token-inp { font-family: monospace; }
+#gh-repo-inp { font-family: 'Sarabun', sans-serif; cursor: pointer; }
+#gh-token-inp:focus, #gh-repo-inp:focus { border-color: rgba(184,146,42,0.5); }
+#gh-btns { display: flex; gap: 10px; margin-top: 24px; }
+#gh-cancel {
+  flex: 1; padding: 10px;
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.12);
+  color: rgba(255,255,255,0.4);
+  cursor: pointer; font-size: 14px;
+  font-family: 'Noto Serif SC', serif;
+  transition: all 0.2s;
+}
+#gh-cancel:hover { background: rgba(255,255,255,0.05); }
+#gh-save-cfg {
+  flex: 2; padding: 10px;
+  background: rgba(26,122,74,0.15);
+  border: 1px solid rgba(26,122,74,0.5);
+  color: #5ACA90; cursor: pointer;
+  font-size: 14px;
+  font-family: 'Noto Serif SC', serif;
+  letter-spacing: 1px; transition: all 0.2s;
+}
+#gh-save-cfg:hover { background: rgba(26,122,74,0.3); }
+#gh-msg { font-size: 13px; color: #CC4444; margin-top: 10px; text-align: center; min-height: 18px; }
 </style>
 
 <!-- UI ELEMENTS -->
