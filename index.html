@@ -2800,7 +2800,7 @@ body:hover
 <div id="edit-toolbar">
   <span id="edit-status" style="">กำลังแก้ไข</span>
   <button id="edit-btn">✎ แก้ไข</button>
-  <button id="save-btn">⬇ โหลดสำหรับ GitHub</button>
+  <button id="save-btn">☁ อัพเดต GitHub</button>
   <button id="reset-btn">↺ ล้างการแก้ไข</button>
 </div>
 
@@ -2948,32 +2948,130 @@ function toggleEdit() {
   }
 }
 
-function saveHTML() {
+/* ── GITHUB CONFIG (เก็บในเครื่องเท่านั้น) ── */
+const GH_OWNER = 'kampon1234';
+const GH_REPO_KEY  = 'gps_gh_repo';
+const GH_TOKEN_KEY = 'gps_gh_token';
+
+function getGHConfig() {
+  return {
+    token: localStorage.getItem(GH_TOKEN_KEY) || '',
+    repo:  localStorage.getItem(GH_REPO_KEY)  || ''
+  };
+}
+
+/* ── SETUP MODAL ── */
+function showGHSetup(callback) {
+  const existing = document.getElementById('gh-modal');
+  if (existing) existing.remove();
+
+  const cfg = getGHConfig();
+  const modal = document.createElement('div');
+  modal.id = 'gh-modal';
+  modal.innerHTML = `
+    <div id="gh-overlay"></div>
+    <div id="gh-box">
+      <div id="gh-title">☁ ตั้งค่า GitHub</div>
+      <div id="gh-subtitle">ข้อมูลเก็บในเครื่องคุณเท่านั้น ไม่ส่งไปที่อื่น</div>
+      <label class="gh-label">Token (ghp_...)</label>
+      <input id="gh-token-inp" type="password" placeholder="ghp_xxxxxxxxxxxx" value="${cfg.token}">
+      <label class="gh-label">ชื่อ Repository</label>
+      <select id="gh-repo-inp">
+        <option value="gps-handbook" ${cfg.repo==='gps-handbook'?'selected':''}>gps-handbook (หนังสือ)</option>
+        <option value="gps-handbook-bookAll" ${cfg.repo==='gps-handbook-bookAll'?'selected':''}>gps-handbook-bookAll (เลื่อน)</option>
+      </select>
+      <div id="gh-btns">
+        <button id="gh-cancel">ยกเลิก</button>
+        <button id="gh-save-cfg">บันทึก & อัพเดต</button>
+      </div>
+      <div id="gh-msg"></div>
+    </div>`;
+  document.body.appendChild(modal);
+
+  document.getElementById('gh-overlay').onclick = () => modal.remove();
+  document.getElementById('gh-cancel').onclick  = () => modal.remove();
+  document.getElementById('gh-save-cfg').onclick = async () => {
+    const token = document.getElementById('gh-token-inp').value.trim();
+    const repo  = document.getElementById('gh-repo-inp').value;
+    if (!token) { document.getElementById('gh-msg').textContent = 'กรุณาใส่ Token'; return; }
+    localStorage.setItem(GH_TOKEN_KEY, token);
+    localStorage.setItem(GH_REPO_KEY,  repo);
+    modal.remove();
+    if (callback) callback(token, repo);
+  };
+}
+
+async function pushToGitHub(token, repo) {
   const wasEditing = editMode;
   if (document.activeElement) document.activeElement.blur();
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      disableEdit();
-      document.body.classList.remove('editing');
-      const toolbar = document.getElementById('edit-toolbar');
-      if (toolbar) toolbar.style.display = 'none';
 
-      const bytes = new TextEncoder().encode('<!DOCTYPE html>\n' + document.documentElement.outerHTML);
-      const blob = new Blob([bytes], { type: 'text/html;charset=utf-8' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url; a.download = 'คู่มือพี่เลี้ยง_GPS.html';
-      document.body.appendChild(a); a.click(); document.body.removeChild(a);
-      setTimeout(() => URL.revokeObjectURL(url), 3000);
+  await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
 
-      if (toolbar) toolbar.style.display = '';
-      if (wasEditing) setTimeout(() => { enableEdit(); document.body.classList.add('editing'); }, 200);
+  disableEdit();
+  document.body.classList.remove('editing');
+  const toolbar = document.getElementById('edit-toolbar');
+  if (toolbar) toolbar.style.display = 'none';
 
-      statusEl.textContent = '✓ โหลดแล้ว';
+  statusEl.textContent = '⏳ กำลังอัพเดต...';
+  statusEl.style.color = '#C9A84C';
+
+  try {
+    // Get current SHA of index.html
+    const fileRes = await fetch(
+      `https://api.github.com/repos/kampon1234/${repo}/contents/index.html`,
+      { headers: { Authorization: `token ${token}`, Accept: 'application/vnd.github.v3+json' } }
+    );
+    const fileData = await fileRes.json();
+    const sha = fileData.sha;
+
+    // Encode new content
+    const html = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
+    const encoded = btoa(unescape(encodeURIComponent(html)));
+
+    // Push update
+    const pushRes = await fetch(
+      `https://api.github.com/repos/kampon1234/${repo}/contents/index.html`,
+      {
+        method: 'PUT',
+        headers: {
+          Authorization: `token ${token}`,
+          Accept: 'application/vnd.github.v3+json',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          message: 'อัพเดตคู่มือผ่านหน้าเว็บ',
+          content: encoded,
+          sha: sha
+        })
+      }
+    );
+
+    if (pushRes.ok) {
+      statusEl.textContent = '✓ อัพเดต GitHub แล้ว!';
       statusEl.style.color = '#5ACA90';
-      setTimeout(() => { statusEl.textContent = wasEditing ? 'กำลังแก้ไข' : ''; statusEl.style.color = ''; }, 2500);
-    });
-  });
+    } else {
+      const err = await pushRes.json();
+      statusEl.textContent = '✕ ' + (err.message || 'เกิดข้อผิดพลาด');
+      statusEl.style.color = '#CC4444';
+    }
+  } catch(e) {
+    statusEl.textContent = '✕ เชื่อมต่อไม่ได้';
+    statusEl.style.color = '#CC4444';
+  }
+
+  if (toolbar) toolbar.style.display = '';
+  if (wasEditing) setTimeout(() => { enableEdit(); document.body.classList.add('editing'); }, 200);
+  setTimeout(() => { statusEl.textContent = wasEditing ? 'กำลังแก้ไข' : ''; statusEl.style.color = ''; }, 4000);
+}
+
+function saveHTML() {
+  autoSave();
+  const cfg = getGHConfig();
+  if (!cfg.token || !cfg.repo) {
+    showGHSetup((token, repo) => pushToGitHub(token, repo));
+  } else {
+    pushToGitHub(cfg.token, cfg.repo);
+  }
 }
 
 editBtn.addEventListener('click', toggleEdit);
